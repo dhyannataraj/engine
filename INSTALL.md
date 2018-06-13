@@ -65,18 +65,25 @@ How to Configure
 The very minimal example of the configuration file is provided in this
 distribution and named `example.conf`.
 
-Configuration file should include following statement in the global
-section, i.e. before first bracketed section header (see config(5) for details)
+First, add the following line to the global section:
 
-    openssl_conf = openssl_def
+    openssl_conf = global_defaults
 
-where `openssl_def` is name of the section in configuration file which
-describes global defaults.
+Theoretically global section starts at the beginning of the configuration file and
+ends before first section header (see config(5) ). Practically the good solution is
+to add this line just at the beginnigng of the file.
 
-This section should contain following statement:
+This statment will define the name of the section that defines global defaults
+(here we called it `openssl_def`)
 
-    [openssl_def]
+Then add `openssl_def` and other sections described below, at at the bottom of the
+configuration file.
+
+    [global_defaults]
     engines = engine_section
+
+The only statement of this section defines a name of the section where 
+
 
 which points to the section which describes list of the engines to be
 loaded. This section should contain:
