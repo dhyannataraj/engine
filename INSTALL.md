@@ -68,59 +68,61 @@ Finally, to start using GOST Engine through OpenSSL, you should edit
 How to Configure
 ----------------
 
-The very minimal example of the configuration file is provided in this
-distribution and named `example.conf`.
+Short configre example with some comments can be found in `example.conf` in this
+distribution. More etended howto can be found here.
 
-First, add the following line to the global section:
+First, add the following line at the first line of `/etc/ssl/openssl.cnf`:
 
     openssl_conf = global_defaults
 
-Theoretically global section starts at the beginning of the configuration file and
-ends before first section header (see config(5) ). Practically the good solution is
-to add this line just at the beginnigng of the file.
+This will define the name of section were global default are defined. This
+definition shoud be made in global section (i.e before first section header
+(see config(5) ), so first line will do well.
 
-This statment will define the name of the section that defines global defaults
-(here we called it `openssl_def`)
-
-Then add `openssl_def` and other sections described below, at at the bottom of the
-configuration file.
+Then add following two section at the end on OpenSSL config file:
 
     [global_defaults]
-    engines = engine_section
+    engines = engines_section
 
-The only statement of this section defines a name of the section where 
+    [engines_section]
+    engine1 = gost_section
+
+`engines = engine_section` in `global_defaults` section will define the name of
+engine section, where you can list all engines that sould be loaded.
+
+`engine1 = gost_section` in `engines_section` will tell OpenSSL to load one engine,
+using options from `gost_section` section.
 
 
-which points to the section which describes list of the engines to be
-loaded. This section should contain:
-
-    [engine_section]
-    gost = gost_section
-
-And section which describes configuration of the engine should contain
+Then you shoud add `gost_section` as follows:
 
     [gost_section]
     engine_id = gost
-    dynamic_path = /usr/lib/ssl/engines/libgost.so
+    # dynamic_path = /usr/lib/ssl/engines/libgost.so
     default_algorithms = ALL
-    CRYPT_PARAMS = id-Gost28147-89-CryptoPro-A-ParamSet
+    CRYPT_PARAMS = id-tc26-gost-28147-param-Z
+    # PK_PARAMS = LEGACY_PK_WRAP
 
-BouncyCastle cryptoprovider has some problems with private key parsing from
-PrivateKeyInfo, so if you want to use old private key representation format,
-which supported by BC, you must add:
 
-    PK_PARAMS = LEGACY_PK_WRAP
+Here `engine_id` specifies name of engine (should be `gost` for this engine).
 
-to `[gost_section]`.
+Normally, engine library binary file will be installed into `ENGINESDIR`
+(Run `openssl version -e` to find out where it is), and OpenSSL will be
+able to find it. But you can also make OpenSSL to load this library from
+alternative location, using `dynamic_path` option.
 
-Where `engine_id` parameter specifies name of engine (should be `gost`).
+`default_algorithms` parameter allows to specify what classes of
+crypthogrphic algorithms provided by this backend, shdould be used. Almost
+always you will need all of them, so use `ALL` option here. Please notice,
+`ALL` is not default value for this option, you should specify it in explicit
+way.
 
-`dynamic_path is` a location of the loadable shared library implementing the
-engine. If the engine is compiled statically or is located in the OpenSSL
-engines directory, this line can be omitted.
+If you are curious about other possible values for `default_algorithms`, you should
+look for `ENGINE_METHOD_*` in `include/openssl/engine.h` and for `int_def_cb()` in
+`crypto/engine/eng_fat.c` in OpenSSL source code. This part of OpenSSL is not well
+documented, and you can get more info mostly from the code.
 
-`default_algorithms` parameter specifies that all algorithms, provided by
-engine, should be used.
+
 
 The `CRYPT_PARAMS` parameter is engine-specific. It allows the user to choose
 between different parameter sets of symmetric cipher algorithm. [RFC 4357][1]
@@ -131,5 +133,14 @@ configuration parameter instead.
 Value of this parameter can be either short name, defined in OpenSSL
 `obj_dat.h` header file or numeric representation of OID, defined in
 [RFC 4357][1].
+
+
+    PK_PARAMS = LEGACY_PK_WRAP
+
+BouncyCastle cryptoprovider has some problems with private key parsing from
+PrivateKeyInfo, so if you want to use old private key representation format,
+which supported by BC, you must add:
+
+
 
 [1]:https://tools.ietf.org/html/rfc4357 "RFC 4357"
